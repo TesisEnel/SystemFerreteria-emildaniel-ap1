@@ -1,0 +1,151 @@
+@page "/idEntrada"
+@page "/idEntrada/{idEntrada:int}"
+@inject EntradaInventarioBLL entradaBLL
+@inject ProductoBLL productoBLL
+@inject NotificationService notify
+
+<PageTitle>Registro</PageTitle>
+<AuthorizeView Context="Context">
+    <Authorized>
+        <EditForm Model="entrada" OnValidSubmit="Guardar">
+                        <div class="col-lg-6 text-center mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Registro de entrada producto</h2>
+                </div>
+                <div class="card-body">
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="form-label">IdEntrada</label>
+                        <div class="input-group">
+                            <InputNumber class="form-control" @bind-Value="entrada.idEntrada" />
+                            <button type="button" @onclick="Buscar" class="btn btn-primary">
+                                <i class="oi oi-zoom-in"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="text-left">Producto</label>
+                        <InputSelect class="form-select" @bind-Value="entrada.idProducto">
+                            @foreach (var producto in ListaProducto!)
+                            {
+                                <option value="@producto.IdProducto">@producto.Nombre</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => entrada.idProducto)" class="form-control" />
+                    </div>
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="text-left">Cantidad</label>
+                        <InputNumber @bind-Value="entrada.Cantidad" class="form-control" placeholder="Ingrese la cantidad" />
+                        <ValidationMessage For="@(() => entrada.Cantidad)" />
+                    </div>
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="form-label">Fecha del pago</label>
+                        <InputDate @bind-Value="entrada.Fecha" class="form-control" placeholder="Ingrese la fecha"/>
+                        <ValidationMessage For="@(() => entrada.Fecha)"/>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-center">
+                    <div class="btn-group " role="group" aria-label="Basic example">
+                        <button type="button" class="btn btn-primary btn-md" @onclick="Nuevo"><i class="oi oi-file"></i> Nuevo</button>
+                        <button type="Submit" class="btn btn-success btn-md mr-2"><i class=" oi oi-cloud-download"></i> Guardar</button>
+                        <button type="button" class="btn btn-danger btn-md" @onclick="Eliminar"><i class="oi oi-trash"></i>Eliminar</button>
+                    </div>
+
+                </div>
+                <DataAnnotationsValidator/>
+                <ValidationSummary/>
+    </div>
+</div>
+        </EditForm>
+    </Authorized>
+    <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code { 
+    [Parameter]
+    public int idEntrada{get; set;}
+    public EntradaInventario entrada {get; set;} = new EntradaInventario();
+    List<Producto>? ListaProducto;
+
+    protected override void OnInitialized()
+    {
+        if(idEntrada > 0){
+            entrada.idEntrada = idEntrada;
+            Buscar();
+        }
+        ListaProducto = productoBLL.GetList(o => true);
+    }
+    void Buscar(){
+        var entradaEncontrar = entradaBLL.Buscar(entrada.idEntrada);
+        if(entradaEncontrar != null){
+            notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
+            this.entrada  = entradaEncontrar;
+        }
+        else{
+            notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
+        }
+    }
+    void Nuevo(){
+        this.entrada = new EntradaInventario();
+    }
+    bool validar()
+    {
+        bool esValido = true;
+
+        if (entrada.Cantidad < 2)
+        {
+            esValido = false;
+            notify.ShowNotification("la cantidad minima es 2.", NotificationSeverity.Error);
+        }
+        if (entrada.idProducto <= 0 )
+        {
+            esValido = false;
+            notify.ShowNotification("Debes seleccionar un producto.", NotificationSeverity.Error);
+        }
+        if(entrada!.idEntrada < 0)
+        {
+            esValido = false;
+            notify.ShowNotification("El ID debe ser mayor que 0.", NotificationSeverity.Error);
+        }
+        if(idEntrada!= entrada?.idEntrada)
+        {
+        esValido = false;
+        notify.ShowNotification($"No se puede modificar el ID ({idEntrada}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
+        }
+        return esValido;
+    }
+    void Guardar(){
+        if(!validar()){
+            return;
+        }
+        if(entradaBLL.Guardar(this.entrada))
+            notify.ShowNotification("Se ha guardado con exito.");
+            this.Nuevo();
+    }
+    void Eliminar(){
+        try {
+            if(entradaBLL.Eliminar(entrada.idEntrada)){
+                notify.ShowNotification("Se ha eliminado con exito", NotificationSeverity.Info);
+                Nuevo();
+            }
+            else{
+                notify.ShowNotification("No hay elemento para borrar", NotificationSeverity.Error);
+                return;
+            }
+        } catch (Exception ex) {
+            notify.ShowNotification("Ocurrió un error al eliminar la entrada. Detalles: " + ex.Message, NotificationSeverity.Error);
+        }
+    }
+
+}

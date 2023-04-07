@@ -1,0 +1,152 @@
+@page "/CategoriaR"
+@page "/CategoriaR/{CategoriaId:int}"
+@inject CategoriaBLL categoriaBLL
+@inject NotificationService notify
+@using System.Text.RegularExpressions;
+
+<PageTitle>Registro</PageTitle>
+
+<AuthorizeView Context="Context">
+    <Authorized>
+        <EditForm Model="categoria" OnValidSubmit="Guardar">
+            <div class="col-lg-6 text-center mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="text-center">Registro de categoría</h2>
+                    </div>
+                    <div class="card-body">
+                        <!--IdCategoria-->
+                        <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                            <label class="form-label">IdCategoria</label>
+                            <div class="input-group">
+                                <InputNumber class="form-control" @bind-Value="categoria.IdCategoria" />
+                                <button type="button" @onclick="Buscar" class="btn btn-primary">
+                                    <i class="oi oi-zoom-in"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!--Nombre-->
+                        <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                            <label>Nombre</label>
+                            <InputText @bind-Value="categoria.Nombre" class="form-control" placeholder="Ingrese el nombre" />
+                            <ValidationMessage For="@(() => categoria.Nombre)" />
+                        </div>
+
+                        <!--Descripcion-->
+                        <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                            <label class="text-center">Descripción</label>
+                            <InputText @bind-Value="categoria.Descripcion" class="form-control" placeholder="Ingrese la descripcion"/>
+                            <ValidationMessage For="@(() => categoria.Descripcion)"/>
+                        </div>
+                    </div>
+
+                    <!--Botones-->
+                    <div class="card-footer d-flex justify-content-center">
+                        <div class="btn-group " role="group" aria-label="Basic example">
+                            <button type="button" class="btn btn-primary btn-md" @onclick="Nuevo"><i class="oi oi-file"></i> Nuevo</button>
+                            <button  type="Submit" class="btn btn-success btn-md mr-2"><i class=" oi oi-cloud-download"></i> Guardar</button>
+                            <button type="button" class="btn btn-danger btn-md" @onclick="Eliminar"><i class="oi oi-trash"></i>Eliminar</button>
+                        </div>
+                    </div>
+                    <DataAnnotationsValidator/>
+                    <ValidationSummary/>
+                </div>
+            </div>
+        </EditForm>
+    </Authorized>
+        <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code { 
+    [Parameter]
+    public int CategoriaId{get; set;}
+    public Categoria categoria {get; set;} = new Categoria();
+    protected override void OnInitialized()
+    {
+        if(CategoriaId > 0){
+            categoria.IdCategoria = CategoriaId;
+            Buscar();
+        }
+    }
+    void Buscar(){
+        var categoriaEncontrada = categoriaBLL.Buscar(categoria.IdCategoria);
+        if(categoriaEncontrada != null){
+            notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
+            this.categoria  = categoriaEncontrada;
+        }
+        else{
+            notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
+        }
+    }
+    void Nuevo(){
+        this.categoria = new Categoria();
+    }
+bool validar()
+{
+    bool esValido = true;
+    
+    if (string.IsNullOrEmpty(categoria.Nombre))
+    {
+        esValido = false;
+        notify.ShowNotification("El nombre de la categoría es obligatorio.", NotificationSeverity.Error);
+    }
+    if (categoria?.Nombre?.Length < 2)
+    {
+        esValido = false;
+        notify.ShowNotification("El nombre de la categoría debe contener al menos 2 caracteres.", NotificationSeverity.Error);
+    }
+    if (string.IsNullOrEmpty(categoria?.Descripcion) || categoria.Descripcion.Length < 2)
+    {
+        esValido = false;
+        notify.ShowNotification("La descripción de la categoría debe contener al menos 2 caracteres.", NotificationSeverity.Error);
+    }
+    if(categoria!.IdCategoria < 0)
+    {
+        esValido = false;
+        notify.ShowNotification("El ID debe ser mayor que 0.", NotificationSeverity.Error);
+    }
+    if(CategoriaId!= categoria?.IdCategoria)
+    {
+    esValido = false;
+    notify.ShowNotification($"No se puede modificar el ID ({CategoriaId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
+    }
+    return esValido;
+}
+
+
+    void Guardar(){
+        if(!validar()){
+            return;
+        }
+        if(categoriaBLL.Guardar(this.categoria))
+            notify.ShowNotification("Se ha guardado con exito.");
+            this.Nuevo();
+    }
+void Eliminar(){
+    try {
+        if(categoriaBLL.Eliminar(categoria.IdCategoria)){
+            notify.ShowNotification("Se ha eliminado con exito", NotificationSeverity.Info);
+            Nuevo();
+        }
+        else{
+            notify.ShowNotification("No hay elemento para borrar", NotificationSeverity.Error);
+            return;
+        }
+    } catch (Exception ex) {
+        notify.ShowNotification("Ocurrió un error al eliminar la entrada. Detalles: " + ex.Message, NotificationSeverity.Error);
+    }
+}
+
+}

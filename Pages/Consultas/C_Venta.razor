@@ -1,0 +1,153 @@
+@page "/ventasC"
+@inject VentaBLL ventaBLL
+@inject NotificationService notify
+<PageTitle>Consultas</PageTitle>
+<AuthorizeView Context="Context">
+    <Authorized>
+        <div class="card">
+        <!--cabecera de la consulta-->
+                <div class="card-header">
+                <h2 class="text-center">Consultas de ventas registrada</h2>
+                <form>
+                        <div class="input-group d-flex align-items-end">
+                            <div class="flex-fill mx-2"> 
+                                <label>Filtro </label>  
+                                    <select class="form-control col-2" @bind="Filtro">
+                                        <option value="0">Todo</option>
+                                        <option value="1">idVenta</option>
+                                        <option value="2">Fecha</option>
+                                        <option value="3">Concepto</option>
+                                        <option value="4">Total</option>
+                                    </select>
+                            </div>
+                            <div class="flex-fill mx-2">
+                                <label>Criterio</label>
+                                <input type="text" class="form-control" @bind="Criterio" disabled="@(HabilitarCriterio)"/>
+                            </div>
+                        <div class="flex-fill mx-2">
+                            <label>Fecha</label>
+                            <input type="date" class="form-control" @bind="FechaInicial" disabled="@(!HabilitarFechas)"/>
+                        </div>
+                        <div class="flex-fill mx-2">
+                            <label>Fecha Final</label>
+                            <input type="date" class="form-control" @bind="FechaFinal" disabled="@(!HabilitarFechas)"/>
+                        </div>
+                        <button type="button" class="btn btn-success mr-2" @onclick="Buscar">
+                            <i class="oi oi-magnifying-glass mr-2"/> Buscar
+                        </button>
+                        </div>
+                    </form>
+            </div>
+        <!--Cuerpo de la consulta-->
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">idVenta</th>
+                            <th scope="col">Concepto</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var venta in FiltroVenta)
+                        {
+                            <tr>
+                                <td>@venta.idVenta</td>
+                                <td>@venta.Concepto</td>
+                                <td>@venta.Total</td>
+                                <td>@venta.Fecha.ToString("MM/dd/yyyy")</td>
+                                <td><a href="/VentaR/@venta.idVenta">Ver</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </Authorized>
+        <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    public bool HabilitarFechas { get { return Filtro == "2";} }
+    public bool HabilitarCriterio {get{return Filtro == "0" || Filtro == "2";}}
+    public DateTime? FechaInicial { get; set; }
+    public DateTime? FechaFinal { get; set; }
+
+    public string? Filtro { get; set; }
+    public string? Criterio { get; set; }
+    public List<Venta> FiltroVenta { get; set; } = new List<Venta>();
+
+    protected override void OnInitialized()
+    {
+        FiltroVenta = ventaBLL.GetList(o => true);
+        Filtro = "0";
+
+    }
+    private void Buscar()
+    {
+        switch (Filtro)
+        {
+            case "0":
+                FiltroVenta = ventaBLL.GetList(o => true);
+                break;             
+            case "1":
+                int id;
+                if (!int.TryParse(Criterio, out id))
+                {
+                    notify.ShowNotification("Debe colocar un numero entero", NotificationSeverity.Error);
+                    return;
+                }
+                FiltroVenta = ventaBLL.GetList(o => o.idVenta == id);
+                break;
+            case "2":
+                    if (FechaInicial == null || FechaFinal == null)
+                    {
+                        notify.ShowNotification("Debe seleccionar una fecha inicial y una fecha final.", NotificationSeverity.Error);
+                        return;
+                    }
+                    if(FechaFinal < FechaInicial){
+                        notify.ShowNotification("La fecha final tiene que ser mayor.", NotificationSeverity.Error);
+                        return;
+                    }
+                    FiltroVenta = ventaBLL.GetList(o => o.Fecha.Date >= FechaInicial.Value.Date && o.Fecha.Date <= FechaFinal.Value.Date);
+                    break;
+                case "3":
+                    if (string.IsNullOrEmpty(Criterio))
+                    {
+                        notify.ShowNotification("Debe colocar un concepto para la búsqueda.", NotificationSeverity.Error);
+                        return;
+                    }
+                    FiltroVenta = ventaBLL.GetList(o => o.Concepto!.Contains(Criterio));
+                break;
+            case "4":
+                double total;
+                if (!double.TryParse(Criterio, out total))
+                {
+                    notify.ShowNotification("Debe colocar un valor numérico para el total.", NotificationSeverity.Error);
+                    return;
+                }
+                FiltroVenta = ventaBLL.GetList(o => o.Total == total);
+                break;
+            default:
+                FiltroVenta = ventaBLL.GetList(o => true);
+                break;
+        }
+        if (!FiltroVenta.Any())
+        {
+            notify.ShowNotification("No se encontro resultado", NotificationSeverity.Error);
+        }
+    }
+}

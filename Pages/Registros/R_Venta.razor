@@ -1,0 +1,234 @@
+@page "/VentaR"
+@page "/VentaR/{VentaId:int}"
+@inject VentaBLL ventabll
+@inject ProductoBLL productosBLL
+@inject NotificationService notify
+<PageTitle>Registro</PageTitle>
+
+<AuthorizeView Context="Context">
+    <Authorized>
+        
+        <EditForm Model="venta" OnInvalidSubmit="Guardar">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Registro de venta</h2>
+                </div>
+                <div class="card-body">
+                    <div class="col-sm-2 mb-2">
+                        <label class="form-label">IdVenta</label>
+                        <div class="input-group">
+                            <InputNumber class="form-control" @bind-Value="venta.idVenta" />
+                            <button type="button" @onclick="Buscar" class="btn btn-primary">
+                                <i class="oi oi-zoom-in"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row ">
+                        <div class="col-sm-3 mb-3">
+                            <label class="form-label">Fecha de la venta</label>
+                            <InputDate @bind-Value="venta.Fecha" class="form-control" placeholder="Ingrese la fecha"/>
+                            <ValidationMessage For="@(() => venta.Fecha)"/>
+                        </div>
+                        <div class="col-sm-3 mb-3">
+                            <label class="form-label">Concepto</label>
+                            <InputText @bind-Value="venta.Concepto" class="form-control" placeholder="Ingrese el Concepto"/>
+                            <ValidationMessage For="@(() => venta.Concepto)"/>
+                        </div>
+                    </div>
+<hr>
+                    <h5 class="mb-3 fw-bold">Detalle sobre venta:</h5>
+                    <div class="row">
+                        <div class="col-sm-4 mb-3">
+                            <label class="form-label">Producto</label>
+                            <InputSelect class="form-select" @bind-Value="Detalle.idProducto">
+                                @foreach (var producto in productosBLL.GetList(o => true))
+                                {
+                                    <option value="@producto.IdProducto">@producto.Nombre (@(producto.Cantidad))</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-sm-4 mb-3">
+                            <label class="form-label">Cantidad</label>
+                            <InputNumber class="form-control" @bind-Value="Detalle.Cantidad" />
+                        </div>
+                        <div class="col-sm-4 mb-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-success mt-2" @onclick="AgregarDetalle">
+                                <i class="oi oi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio</th>
+                                    <th>Importe</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var detalle in venta.ventaDetalle)
+                                {
+                                    <tr>
+                                        <td>@detalle.Descripcion</td>
+                                        <td>@detalle.Cantidad</td>
+                                        <td>@detalle.Precio</td>
+                                        <td>@detalle.Importe</td>
+                                    <td>
+                                        <button class="btn btn-danger mr-2" onclick="@(() => EliminarDetalle(detalle))">
+                                            <i class="oi oi-trash"></i>
+                                        </button>
+                                    </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end">Total a pagar:</td>
+                                    <td colspan="4" class="fw-bold">@string.Format("{0:C}", venta.ventaDetalle.Sum(d => d.Importe))</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-center">
+                    <div class="btn-group " role="group" aria-label="Basic example">
+                        <button type="button" class="btn btn-primary btn-md" @onclick="Nuevo"><i class="oi oi-file"></i> Nuevo</button>
+                        <button type="button" @onclick="Guardar" class="btn btn-success btn-md mr-2"><i class=" oi oi-cloud-download"></i> Guardar</button>
+                        <button type="button" class="btn btn-danger btn-md" @onclick="Eliminar" disabled="@valide"><i class="oi oi-trash"></i>Eliminar</button>
+                    </div>
+                </div>
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+            </div>
+        </EditForm>
+    </Authorized>
+
+    <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public int VentaId {get; set;}
+    public Venta venta {get; set;} = new Venta();
+    public bool valide { get; set; }= false;
+    public VentaDetalle Detalle = new VentaDetalle();
+
+    protected override void OnInitialized()
+    {
+        if(VentaId > 0){
+            venta.idVenta = VentaId;
+            Buscar();
+        }
+    }
+    void Buscar(){
+        var ventaEncontrada = ventabll.Buscar(venta.idVenta);
+        if(ventaEncontrada != null){
+            notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
+            this.venta  = ventaEncontrada;
+        }
+        else{
+            notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
+        }
+    }
+    void Nuevo(){
+        this.venta = new Venta();
+        valide= false;
+
+    }
+    bool validar()
+    {
+        bool esValido = true;
+        if (string.IsNullOrEmpty(venta.Concepto))
+        {
+            esValido = false;
+            notify.ShowNotification("El concepto de la venta es obligatorio", NotificationSeverity.Error);
+        }
+        if (venta.Total <= 0)
+        {
+            esValido = false;
+        }
+        if (venta.ventaDetalle.Count == 0)
+        {
+            esValido = false;
+            notify.ShowNotification("Debes de rellenar el detalle para realizar una venta.", NotificationSeverity.Error);
+        }
+        if(venta!.idVenta < 0)
+        {
+            esValido = false;
+            notify.ShowNotification("El ID debe ser mayor que 0.", NotificationSeverity.Error);
+        }
+        if(VentaId!= venta?.idVenta)
+        {
+        esValido = false;
+        notify.ShowNotification($"No se puede modificar el ID ({VentaId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
+        }
+        return esValido;
+    }
+    void Guardar(){
+        if(!validar()){
+            return;
+        }
+        if(ventabll.Guardar(this.venta))
+            notify.ShowNotification("Se ha guardado con exito.");
+            this.Nuevo();
+    }
+    void Eliminar(){
+        try {
+            if(venta != null && venta.idVenta != 0 && ventabll.Eliminar(venta)){
+                notify.ShowNotification("Se ha eliminado con exito", NotificationSeverity.Info);
+                Nuevo();
+            }
+            else{
+                notify.ShowNotification("No hay elemento para borrar", NotificationSeverity.Error);
+                return;
+            }
+        } catch (Exception ex) {
+            notify.ShowNotification("Ha ocurrido un error al eliminar el elemento: " + ex.Message, NotificationSeverity.Error);
+        }
+    }
+    void AgregarDetalle()
+    {
+        var producto = productosBLL.Buscar(Detalle.idProducto);
+        if (Detalle.Cantidad <= producto?.Cantidad && Detalle.Cantidad > 0)
+        {
+            Detalle.Descripcion = producto!.Nombre;
+            Detalle.Precio = producto!.Precio;
+            Detalle.Importe = Detalle.Cantidad * producto.Precio; 
+            venta.ventaDetalle.Add(Detalle);
+            Detalle = new VentaDetalle();
+            valide= true;
+            notify.ShowNotification("Se ha agregado el detalle de venta con éxito", NotificationSeverity.Success);
+        }
+        else if(Detalle.Cantidad <= 0)
+        {
+            notify.ShowNotification("La cantidad no puede ser un valor invalido.", NotificationSeverity.Error);
+        }
+        else if(Detalle.Cantidad >= producto?.Cantidad)
+        {
+            notify.ShowNotification("La cantidad solicitada excede la existencia del producto.", NotificationSeverity.Error);
+        }
+        else if(Detalle.idProducto == 0){
+            notify.ShowNotification("Coloque un producto.", NotificationSeverity.Error);
+        }
+        venta.Total = venta.ventaDetalle.Sum(d => d.Importe);
+    }
+    void EliminarDetalle(VentaDetalle detalle)
+    {
+        venta.ventaDetalle.Remove(detalle);
+        venta.Total = venta.ventaDetalle.Sum(d => d.Importe);
+        valide = true;
+    }
+}

@@ -1,0 +1,190 @@
+@page "/ProductoR"
+@page "/ProductoR/{ProductoId:int}"
+@inject ProductoBLL productoBLL
+@inject CategoriaBLL categoriaBLL
+@inject NotificationService notify
+<PageTitle>Registro</PageTitle>
+<AuthorizeView Context="Context">
+<Authorized>
+    
+    <EditForm Model="producto" OnValidSubmit="Guardar">
+    <!--HTML-->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-center">Registro de Producto</h2>
+            </div>
+            <div class="card-body">
+    <!--IdProducto-->
+                <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="form-label">IdProducto</label>
+                        <div class="input-group">
+                            <InputNumber class="form-control" @bind-Value="producto.IdProducto" />
+                            <button type="button" @onclick="Buscar" class="btn btn-primary">
+                                <i class="oi oi-zoom-in"></i>
+                            </button>
+                        </div>
+                    </div>
+                <div class="row">
+                    <!--Nombre-->
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="text-left">Nombre</label>
+                        <InputText @bind-Value="producto.Nombre" class="form-control" placeholder="Ingrese el nombre"/>
+                        <ValidationMessage For="@(() => producto.Nombre)"/>
+                    </div>
+                    <!--IdCategoria-->
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="text-left">Categoría</label>
+                            <InputSelect class="form-select" @bind-Value="producto.IdCategoria">
+                                @foreach (var category in listaCategoria!)
+                                {
+                                    <option value="@category.IdCategoria">@category.Nombre</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => producto.IdCategoria)" class="form-control" />
+                    </div>
+                </div>
+                <div class="row">
+                <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                    <label class="text-left">Costo</label>
+                    <InputNumber @bind-Value="producto.Costo" class="form-control" placeholder="Ingrese el costo"/>
+                    <ValidationMessage For="@(() => producto.Costo)"/>
+                </div>
+                    <!--Precio-->
+                <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                    <label class="text-left">Precio</label>
+                    <InputNumber @bind-Value="producto.Precio" class="form-control" placeholder="Ingrese el precio"/>
+                    <ValidationMessage For="@(() => producto.Precio)"/>
+                </div>
+
+                </div>
+                <div class="row">
+                    <!--Fecha-->
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="form-label">Fecha de ingreso</label>
+                        <InputDate @bind-Value="producto.Fecha" class="form-control" placeholder="Ingrese la fecha"/>
+                        <ValidationMessage For="@(() => producto.Fecha)"/>
+                    </div>
+                    <!--Cantidad-->
+                    <div class="col-sm-2 col-md-4 mb-2 mx-auto">
+                        <label class="text-left">Cantidad</label>
+                        <InputNumber @bind-Value="producto.Cantidad" class="form-control" placeholder="Ingrese la cantidad"/>
+                        <ValidationMessage For="@(() => producto.Cantidad)"/>
+                    </div>
+                </div>
+            </div>
+    <!--Botones-->
+                <div class="card-footer d-flex justify-content-center">
+                    <div class="btn-group " role="group" aria-label="Basic example">
+                        <button type="button" class="btn btn-primary btn-md" @onclick="Nuevo"><i class="oi oi-file"></i> Nuevo</button>
+                        <button type="Submit" class="btn btn-success btn-md mr-2"><i class=" oi oi-cloud-download"></i> Guardar</button>
+                        <button type="button" class="btn btn-danger btn-md" @onclick="Eliminar"><i class="oi oi-trash"></i>Eliminar</button>
+                    </div>
+                </div>
+                    <DataAnnotationsValidator/>
+                    <ValidationSummary/>
+        </div>
+    </EditForm>
+</Authorized>
+    <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [Parameter]
+    public int ProductoId{get; set;}
+    public Producto producto {get; set;} = new Producto();
+    List<Categoria>? listaCategoria;
+
+    protected override void OnInitialized()
+    {
+        if(ProductoId > 0){
+            producto.IdProducto = ProductoId;
+            Buscar();
+        }
+        listaCategoria = categoriaBLL.GetList(o => true);
+    }
+    void Buscar(){
+        var ProductoAencontra = productoBLL.Buscar(producto.IdProducto);
+        if(ProductoAencontra != null){
+            notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
+            this.producto  = ProductoAencontra;
+        }
+        else{
+            notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
+        }
+    }
+    void Nuevo(){
+        this.producto = new Producto();
+    }
+    bool validar()
+    {
+        bool esValido = true;
+        if (string.IsNullOrEmpty(producto.Nombre))
+        {
+            esValido = false;
+            notify.ShowNotification("El nombre del producto es obligatorio", NotificationSeverity.Error);
+        }
+        if (producto.Precio <= 0)
+        {
+            esValido = false;
+            notify.ShowNotification("El precio debe ser mayor que cero", NotificationSeverity.Error);
+        }
+        if (producto.Costo <= 0)
+        {
+            esValido = false;
+            notify.ShowNotification("El costo debe ser mayor que cero", NotificationSeverity.Error);
+        }
+        if (producto.Precio <= producto.Costo)
+        {
+            esValido = false;
+            notify.ShowNotification("El precio debe ser mayor que el costo", NotificationSeverity.Error);
+        }
+        if(producto.IdCategoria <= 0){
+            esValido = false;
+            notify.ShowNotification("Debe catalogar el producto.", NotificationSeverity.Error);
+        }
+        if(producto!.IdProducto < 0)
+        {
+            esValido = false;
+            notify.ShowNotification("El ID debe ser mayor que 0.", NotificationSeverity.Error);
+        }
+        if(ProductoId!= producto?.IdProducto)
+        {
+        esValido = false;
+        notify.ShowNotification($"No se puede modificar el ID ({ProductoId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
+        }
+        return esValido;
+    }
+    void Guardar(){
+        if(!validar()){
+            return;
+        }
+        if(productoBLL.Guardar(this.producto))
+            notify.ShowNotification("Se ha guardado con exito.");
+            this.Nuevo();
+    }
+    void Eliminar(){
+        try {
+            if(productoBLL.Eliminar(producto.IdProducto)){
+                notify.ShowNotification("Se ha eliminado con exito", NotificationSeverity.Info);
+                Nuevo();
+            }
+            else{
+                notify.ShowNotification("No hay elemento para borrar", NotificationSeverity.Error);
+                return;
+            }
+        } catch (Exception ex) {
+            notify.ShowNotification("Ha ocurrido un error al eliminar el producto: " + ex.Message, NotificationSeverity.Error);
+            return;
+        }
+    }
+
+}

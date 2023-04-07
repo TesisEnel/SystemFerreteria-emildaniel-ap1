@@ -1,0 +1,167 @@
+@page "/categoriaC"
+@inject CategoriaBLL categoriaBLL
+@inject NotificationService notify
+<PageTitle>Consultas</PageTitle>
+<AuthorizeView Context="Context">
+    <Authorized>
+        <div class="card">
+        <!--cabecera de la consulta-->
+                <div class="card-header">
+                <h2 class="text-center">Consulta de categoría registrada</h2>
+                <form>
+                    <div class="input-group d-flex align-items-end">
+                        <div class="flex-fill mx-2">
+                            <label>Filtro </label>  
+                            <select class="form-control col-2" @bind="Filtro">
+                                <option value="0">Todo</option>
+                                <option value="1">IdCategoria</option>
+                                <option value="2">Nombre</option>
+                                <option value="3">Descripcion</option>
+                                <option value="5">Fecha</option>
+                            </select>
+                        </div>
+                        <div class="flex-fill mx-2">
+                            <label>Criterio</label>
+                            <input type="text" class="form-control" @bind="Criterio" disabled="@(HabilitarCriterio)"/>
+                        </div>
+
+                        <div class="flex-fill mx-2">
+                            <label>Fecha</label>
+                            <input type="date" class="form-control" @bind="FechaInicial" disabled="@(!HabilitarFechas)"/>
+                        </div>
+                        <div class="flex-fill mx-2">
+                            <label>Fecha Final</label>
+                            <input type="date" class="form-control" @bind="FechaFinal" disabled="@(!HabilitarFechas)"/>
+                        </div>
+                        <button type="button" class="btn btn-success mr-2" @onclick="Buscar">
+                            <i class="oi oi-magnifying-glass mr-2"/> Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        <!--Cuerpo de la consulta-->
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">IdCategoria</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Añadido</th>
+                            <th scope="col">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var categoria in FiltroCat)
+                        {
+                            <tr>
+                                <td>@categoria.IdCategoria</td>
+                                <td>@categoria.Nombre</td>
+                                <td>@categoria.Descripcion</td>
+                                <td>@categoria.Fecha.ToString("MM/dd/yyyy")</td>
+                                <td><a href="/CategoriaR/@categoria.IdCategoria">Ver</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </Authorized>
+
+    <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>    
+
+@code {
+    public string? Filtro { get; set; }
+    public string? Criterio { get; set; }
+    public List<Categoria> FiltroCat { get; set; } = new List<Categoria>();
+
+
+    public bool HabilitarFechas { get { return Filtro == "5";} }
+    public bool HabilitarCriterio {get{return Filtro == "0" || Filtro == "5";}}
+
+
+    public DateTime? FechaInicial { get; set; }
+    public DateTime? FechaFinal { get; set; }
+
+    protected override void OnInitialized()
+    {
+        FiltroCat = categoriaBLL.GetList(o => true);
+        Filtro = "0";
+    }
+    private void Buscar()
+    {
+        switch (Filtro)
+        {
+            case "0":
+                FiltroCat = categoriaBLL.GetList(o => true);
+                break;             
+            case "1":
+                int id;
+                if (!int.TryParse(Criterio, out id))
+                {
+                    notify.ShowNotification("Debe colocar un numero entero", NotificationSeverity.Error);
+                    return;
+                }
+                FiltroCat = categoriaBLL.GetList(o => o.IdCategoria == id);
+                break;
+            case "2":
+            if (string.IsNullOrEmpty(Criterio))
+            {
+                notify.ShowNotification("Debe colocar un Nombre  para la búsqueda.", NotificationSeverity.Error);
+                return;
+            }
+                FiltroCat = categoriaBLL.GetList(o => o.Nombre!.Contains(Criterio));
+                break;
+            case "3":
+            if (string.IsNullOrEmpty(Criterio))
+            {
+                notify.ShowNotification("Debe colocar una Descripcion para la búsqueda.", NotificationSeverity.Error);
+                return;
+            }
+                FiltroCat = categoriaBLL.GetList(o => o.Descripcion!.Contains(Criterio));
+                break;
+            case "4":
+                if (DateTime.TryParse(Criterio, out DateTime fecha))
+                {
+                    FiltroCat = categoriaBLL.GetList(o => o.Fecha.Date == fecha.Date);
+                }
+                else
+                {
+                    notify.ShowNotification("Debe colocar una fecha válida en formato dd/MM/yyyy.", NotificationSeverity.Error);
+                }
+                break;
+            case "5":
+            if (FechaInicial == null || FechaFinal == null)
+            {
+                notify.ShowNotification("Debe seleccionar una fecha inicial y una fecha final.", NotificationSeverity.Error);
+                return;
+            }
+            if(FechaFinal < FechaInicial){
+                notify.ShowNotification("La fecha final tiene que ser mayor.", NotificationSeverity.Error);
+                return;
+            }
+            FiltroCat = categoriaBLL.GetList(o => o.Fecha.Date >= FechaInicial.Value.Date && o.Fecha.Date <= FechaFinal.Value.Date);
+            break;
+            default:
+                FiltroCat = categoriaBLL.GetList(o => true);
+                break;
+        }
+        if (!FiltroCat.Any())
+        {
+            notify.ShowNotification("No se encontro resultado", NotificationSeverity.Error);
+        }
+    }
+
+
+}

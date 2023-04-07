@@ -1,0 +1,192 @@
+@page "/productoC"
+@inject ProductoBLL productoBLL
+@inject NotificationService notify
+
+<PageTitle>Consultas</PageTitle>
+<AuthorizeView Context="Context">
+    <Authorized>
+        <div class="card">
+        <!--cabecera de la consulta-->
+                <div class="card-header">
+                <h2 class="text-center">Consultas de productos registrado</h2>
+                <form>
+                        <div class="input-group d-flex align-items-end">
+                            <div class="flex-fill mx-2"> 
+                                <label>Filtro</label>  
+                                    <select class="form-control col-2" @bind="Filtro">
+                                        <option value="0">Todo</option>
+                                        <option value="1">IdProducto</option>
+                                        <option value="2">Nombre</option>
+                                        <option value="3">precio</option>
+                                        <option value="4">Cantidad</option>
+                                        <option value="5">IdCategoria</option>
+                                        <option value="6">Fecha</option>
+                                        <option value="7">Costo</option> 
+                                    </select>
+                            </div>
+                            <div class="flex-fill mx-2">
+                                <label>Criterio</label>
+                                <input type="text" class="form-control" @bind="Criterio" disabled="@(HabilitarCriterio)"/>
+                            </div>
+                        <div class="flex-fill mx-2">
+                            <label>Fecha</label>
+                            <input type="date" class="form-control" @bind="FechaInicial" disabled="@(!HabilitarFechas)"/>
+                        </div>
+                        <div class="flex-fill mx-2">
+                            <label>Fecha Final</label>
+                            <input type="date" class="form-control" @bind="FechaFinal" disabled="@(!HabilitarFechas)"/>
+                        </div>
+                        <button type="button" class="btn btn-success mr-2" @onclick="Buscar">
+                            <i class="oi oi-magnifying-glass mr-2"/> Buscar
+                        </button>
+                        </div>
+                    </form>
+            </div>
+        <!--Cuerpo de la consulta-->
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">IdProducto</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">precio</th>
+                            <th scope="col">Costo</th>
+                            <th scope="col">Cantidad</th>
+                            <th scope="col">IdCategoria</th>
+                            <th scope="col">Añadido</th>
+                            <th scope="col">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var producto in FiltroProd)
+                        {
+                            <tr>
+                                <td>@producto.IdProducto</td>
+                                <td>@producto.Nombre</td>
+                                <td>@producto.Precio</td>
+                                <td>@producto.Costo</td>
+                                <td>@producto.Cantidad</td>
+                                <td>@producto.IdCategoria</td>
+                                <td>@producto.Fecha.ToString("MM/dd/yyyy")</td>
+                                <td><a href="/ProductoR/@producto.IdProducto">Ver</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </Authorized>
+        <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <h1>Acceso no autorizado</h1>
+                    <p>Para acceder a esta página, es necesario iniciar sesión con una cuenta autorizada.</p>
+                    <a href="Identity/Account/Login"><button class="btn btn-primary">Iniciar sesión</button></a>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    public bool HabilitarFechas { get { return Filtro == "6";} }
+    public bool HabilitarCriterio {get{return Filtro == "0" || Filtro == "6";}}
+
+    public string? Filtro { get; set; }
+    public string? Criterio { get; set; }
+
+    public DateTime? FechaInicial { get; set; }
+    public DateTime? FechaFinal { get; set; }
+
+    public List<Producto> FiltroProd { get; set; } = new List<Producto>();
+
+    public Producto Productos = new Producto();
+    protected override void OnInitialized()
+    {
+        FiltroProd = productoBLL.GetList(o => true);
+        Filtro = "0";
+    }
+    private void Buscar()
+    {
+        switch (Filtro)
+        {
+            case "0":
+                FiltroProd = productoBLL.GetList(o => true);
+                break;             
+            case "1":
+                int id;
+                if (!int.TryParse(Criterio, out id))
+                {
+                    notify.ShowNotification("Debe colocar un numero entero", NotificationSeverity.Error);
+                    return;
+                }
+                FiltroProd = productoBLL.GetList(o => o.IdProducto == id);
+                break;
+            case "2":
+            if (string.IsNullOrEmpty(Criterio))
+            {
+                notify.ShowNotification("Debe colocar un Nombre para la búsqueda.", NotificationSeverity.Error);
+                return;
+            }
+                FiltroProd = productoBLL.GetList(o => o.Nombre!.Contains(Criterio));
+                break;
+            case "3":
+                double precio;
+                if (!double.TryParse(Criterio, out precio))
+                {
+                    notify.ShowNotification("Debe colocar un valor numérico para el precio.", NotificationSeverity.Error);
+                    return;
+                }
+                FiltroProd = productoBLL.GetList(o => o.Precio == precio);
+                break;
+                case "4":
+                    int cantidad;
+                    if (!int.TryParse(Criterio, out cantidad))
+                    {
+                        notify.ShowNotification("Debe colocar un valor numérico entero para la cantidad.", NotificationSeverity.Error);
+                        return;
+                    }
+                    FiltroProd = productoBLL.GetList(o => o.Cantidad == cantidad);
+                    break;
+                case "5":
+                    int idCategoria;
+                    if (!int.TryParse(Criterio, out idCategoria))
+                    {
+                        notify.ShowNotification("Debe colocar un numero entero para el Id de Categoría.", NotificationSeverity.Error);
+                        return;
+                    }
+                    FiltroProd = productoBLL.GetList(o => o.IdCategoria == idCategoria);
+                    break;
+                case "6":
+                    if (FechaInicial == null || FechaFinal == null)
+                    {
+                        notify.ShowNotification("Debe seleccionar una fecha inicial y una fecha final.", NotificationSeverity.Error);
+                        return;
+                    }
+                    if(FechaFinal < FechaInicial){
+                        notify.ShowNotification("La fecha final tiene que ser mayor.", NotificationSeverity.Error);
+                        return;
+                    }
+                    FiltroProd = productoBLL.GetList(o => o.Fecha.Date >= FechaInicial.Value.Date && o.Fecha.Date <= FechaFinal.Value.Date);
+                    break;
+            case "7":
+                double costo;
+                if (!double.TryParse(Criterio, out costo))
+                {
+                    notify.ShowNotification("Debe colocar un valor numérico para el costo.", NotificationSeverity.Error);
+                    return;
+                }
+                FiltroProd = productoBLL.GetList(o => o.Costo == costo);
+                break;
+            default:
+                FiltroProd = productoBLL.GetList(o => true);
+                break;
+        }
+        if (!FiltroProd.Any())
+        {
+            notify.ShowNotification("No se encontro resultado", NotificationSeverity.Error);
+        }
+    }
+}

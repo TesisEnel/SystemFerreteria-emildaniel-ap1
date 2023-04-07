@@ -1,0 +1,86 @@
+﻿
+<AuthorizeView Context="Context">
+    <Authorized>
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">SystemFerreteria</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="CategoriaR" Match="NavLinkMatch.All">
+                <span class="fas fa-folder-plus me-2" aria-hidden="true"></span> Registro Categoria
+            </NavLink>
+        </div>
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="categoriaC">
+                <span class="fas fa-list me-2" aria-hidden="true"></span> Consulta Categoria
+            </NavLink>
+        </div>
+        
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="ProductoR" Match="NavLinkMatch.All">
+                <span class="fas fa-folder-plus me-2" aria-hidden="true"></span> Registro Producto
+            </NavLink>
+        </div>
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="productoC">
+                <span class="fas fa-list me-2" aria-hidden="true"></span> Consulta Producto
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="idEntrada" Match="NavLinkMatch.All">
+                <span class="fas fa-folder-plus me-2" aria-hidden="true"></span> Entrada de producto
+            </NavLink>
+        </div>
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="entradaC">
+                <span class="fas fa-list me-2" aria-hidden="true"></span> Consulta de entrada
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="VentaR" Match="NavLinkMatch.All">
+                <span class="fas fa-folder-plus me-2" aria-hidden="true"></span> Ventas
+            </NavLink>
+        </div>
+        <div class="nav-item px-4">
+            <NavLink class="nav-link" href="ventasC">
+                <span class="fas fa-list me-2" aria-hidden="true"></span> Consulta de venta
+            </NavLink>
+        </div>
+    </nav>
+</div>
+    </Authorized>
+        <NotAuthorized>
+        <div class="container-fluid">
+                <a class="navbar-brand" href=""><i class="fas fa-gavel"></i> SystemFerreteria</a>
+                <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        <div class="container-fluid">
+            <div class="row justify-content-left">
+                <div class="col-md-6 ">
+                    <h1>Acceso no autorizado</h1>
+                </div>
+            </div>
+        </div>
+        </NotAuthorized>
+</AuthorizeView>
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
