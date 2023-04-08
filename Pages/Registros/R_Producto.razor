@@ -163,11 +163,6 @@
         esValido = false;
         notify.ShowNotification($"No se puede modificar el ID ({ProductoId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
         }
-        if (productoBLL.Buscar(producto!.IdProducto) != null)
-        {
-            esValido = false;
-            notify.ShowNotification($"El ID de producto {producto.IdProducto} ya está en uso.", NotificationSeverity.Error);
-        }
         return esValido;
     }
     void Guardar(){

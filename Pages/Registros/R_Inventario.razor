@@ -125,11 +125,6 @@
         esValido = false;
         notify.ShowNotification($"No se puede modificar el ID ({idEntrada}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
         }
-        if (entradaBLL.Buscar(entrada!.idEntrada) != null)
-        {
-            esValido = false;
-            notify.ShowNotification($"El ID de entrada {entrada.idEntrada} ya está en uso.", NotificationSeverity.Error);
-        }
         return esValido;
     }
     void Guardar(){

@@ -178,11 +178,6 @@
         esValido = false;
         notify.ShowNotification($"No se puede modificar el ID ({VentaId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
         }
-        if (ventabll.Buscar(venta!.idVenta) != null)
-        {
-            esValido = false;
-            notify.ShowNotification($"El ID de la venta {venta.idVenta} ya está en uso.", NotificationSeverity.Error);
-        }
         return esValido;
     }
     void Guardar(){
