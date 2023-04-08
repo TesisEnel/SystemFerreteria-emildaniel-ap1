@@ -7,7 +7,6 @@
 
 <AuthorizeView Context="Context">
     <Authorized>
-        
         <EditForm Model="venta" OnInvalidSubmit="Guardar">
             <div class="card">
                 <div class="card-header">
@@ -87,7 +86,7 @@
                             <tfoot>
                                 <tr>
                                     <td colspan="3" class="text-end">Total a pagar:</td>
-                                    <td colspan="4" class="fw-bold">@string.Format("{0:C}", venta.ventaDetalle.Sum(d => d.Importe))</td>
+                                    <td colspan="4" class="fw-bold">&#36; @venta.ventaDetalle.Sum(d => d.Importe)</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -138,6 +137,7 @@
         if(ventaEncontrada != null){
             notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
             this.venta  = ventaEncontrada;
+            VentaId = ventaEncontrada.idVenta;
         }
         else{
             notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
@@ -146,7 +146,7 @@
     void Nuevo(){
         this.venta = new Venta();
         valide= false;
-
+        VentaId = 0;
     }
     bool validar()
     {
@@ -174,6 +174,11 @@
         {
         esValido = false;
         notify.ShowNotification($"No se puede modificar el ID ({VentaId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
+        }
+        if (ventabll.Buscar(venta!.idVenta) != null)
+        {
+            esValido = false;
+            notify.ShowNotification($"El ID de la venta {venta.idVenta} ya está en uso.", NotificationSeverity.Error);
         }
         return esValido;
     }

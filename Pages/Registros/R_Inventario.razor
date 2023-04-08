@@ -91,6 +91,7 @@
         if(entradaEncontrar != null){
             notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
             this.entrada  = entradaEncontrar;
+            idEntrada = entradaEncontrar.idEntrada;
         }
         else{
             notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
@@ -98,6 +99,7 @@
     }
     void Nuevo(){
         this.entrada = new EntradaInventario();
+        this.idEntrada = 0;
     }
     bool validar()
     {
@@ -122,6 +124,11 @@
         {
         esValido = false;
         notify.ShowNotification($"No se puede modificar el ID ({idEntrada}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
+        }
+        if (entradaBLL.Buscar(entrada!.idEntrada) != null)
+        {
+            esValido = false;
+            notify.ShowNotification($"El ID de entrada {entrada.idEntrada} ya está en uso.", NotificationSeverity.Error);
         }
         return esValido;
     }

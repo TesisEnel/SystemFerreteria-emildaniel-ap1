@@ -3,7 +3,6 @@
 @inject CategoriaBLL categoriaBLL
 @inject NotificationService notify
 @using System.Text.RegularExpressions;
-
 <PageTitle>Registro</PageTitle>
 
 <AuthorizeView Context="Context">
@@ -85,18 +84,23 @@
         if(categoriaEncontrada != null){
             notify.ShowNotification("Se ha encontrado la busqueda con exito", NotificationSeverity.Info);
             this.categoria  = categoriaEncontrada;
+            this.CategoriaId = categoriaEncontrada.IdCategoria;
+            StateHasChanged();
+
         }
         else{
             notify.ShowNotification("Ingrese un valor existente", NotificationSeverity.Error);
         }
     }
-    void Nuevo(){
-        this.categoria = new Categoria();
-    }
+void Nuevo()
+{
+    this.categoria = new Categoria();
+    this.CategoriaId = 0;
+}
+
 bool validar()
 {
     bool esValido = true;
-    
     if (string.IsNullOrEmpty(categoria.Nombre))
     {
         esValido = false;
@@ -117,15 +121,19 @@ bool validar()
         esValido = false;
         notify.ShowNotification("El ID debe ser mayor que 0.", NotificationSeverity.Error);
     }
-    if(CategoriaId!= categoria?.IdCategoria)
+    if(CategoriaId != categoria?.IdCategoria)
     {
     esValido = false;
     notify.ShowNotification($"No se puede modificar el ID ({CategoriaId}). Si deseas crear un nuevo registro, ingresa '0' en el campo ID. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
     }
+    if (categoriaBLL.Buscar(categoria!.IdCategoria) != null)
+    {
+        esValido = false;
+        notify.ShowNotification($"El ID de categoría {categoria.IdCategoria} ya está en uso.", NotificationSeverity.Error);
+    }
+    
     return esValido;
 }
-
-
     void Guardar(){
         if(!validar()){
             return;
@@ -139,6 +147,10 @@ void Eliminar(){
         if(categoriaBLL.Eliminar(categoria.IdCategoria)){
             notify.ShowNotification("Se ha eliminado con exito", NotificationSeverity.Info);
             Nuevo();
+        }
+        else if(CategoriaId!= categoria?.IdCategoria)
+        {
+            notify.ShowNotification($"No se puede eliminar el ID ({CategoriaId}). Si deseas eliminar el registro, ingresa 'ID' Correcto. Comunícate con el soporte técnico si necesitas ayuda adicional." , NotificationSeverity.Error);
         }
         else{
             notify.ShowNotification("No hay elemento para borrar", NotificationSeverity.Error);
