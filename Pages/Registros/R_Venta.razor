@@ -14,7 +14,7 @@
                 </div>
                 <div class="card-body">
                     <div class="col-sm-2 mb-2">
-                        <label class="form-label">IdVenta</label>
+                        <label class="form-label">Id</label>
                         <div class="input-group">
                             <InputNumber class="form-control" @bind-Value="venta.idVenta" />
                             <button type="button" @onclick="Buscar" class="btn btn-primary">
@@ -40,7 +40,7 @@
                         <div class="col-sm-4 mb-3">
                             <label class="form-label">Producto</label>
                             <InputSelect class="form-select" @bind-Value="Detalle.idProducto">
-                                @foreach (var producto in productosBLL.GetList(o => true))
+                                @foreach (var producto in lista)
                                 {
                                     <option value="@producto.IdProducto">@producto.Nombre (@(producto.Cantidad))</option>
                                 }
@@ -125,12 +125,15 @@
     public bool valide { get; set; }= false;
     public VentaDetalle Detalle = new VentaDetalle();
 
+    List<Producto> lista = new List<Producto>();
+
     protected override void OnInitialized()
     {
         if(VentaId > 0){
             venta.idVenta = VentaId;
             Buscar();
         }
+        lista = productosBLL.GetList(o=>true);
     }
     void Buscar(){
         var ventaEncontrada = ventabll.Buscar(venta.idVenta);
@@ -206,6 +209,10 @@
     }
     void AgregarDetalle()
     {
+        if(lista?.FirstOrDefault(o=> o.IdProducto== Detalle.idProducto)?.Cantidad < Detalle.Cantidad){
+            notify.ShowNotification("cantidad no disponible", NotificationSeverity.Warning);
+            return;
+        }
         var producto = productosBLL.Buscar(Detalle.idProducto);
         if (Detalle.Cantidad <= producto?.Cantidad && Detalle.Cantidad > 0)
         {
@@ -213,6 +220,7 @@
             Detalle.Precio = producto!.Precio;
             Detalle.Importe = Detalle.Cantidad * producto.Precio; 
             venta.ventaDetalle.Add(Detalle);
+            lista.FirstOrDefault(o=> o.IdProducto== Detalle.idProducto ).Cantidad-=Detalle.Cantidad;
             Detalle = new VentaDetalle();
             valide= true;
             notify.ShowNotification("Se ha agregado el detalle de venta con éxito", NotificationSeverity.Success);
@@ -234,6 +242,7 @@
     {
         venta.ventaDetalle.Remove(detalle);
         venta.Total = venta.ventaDetalle.Sum(d => d.Importe);
+        lista.FirstOrDefault(o=> o.IdProducto == detalle.idProducto)!.Cantidad+=detalle.Cantidad;
         valide = true;
     }
 }
