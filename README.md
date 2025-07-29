@@ -1,3 +1,4 @@
+
 # Sistema de Venta para Ferretería en Blazor
 Este proyecto es un sistema de venta que permite gestionar los productos, categorías y ventas de una ferretería. El sistema también mantiene actualizado el inventario de productos y categorías, y registra las ventas realizadas y sus detalles.
 Estructura del proyecto
